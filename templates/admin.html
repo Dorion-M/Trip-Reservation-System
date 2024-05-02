@@ -1,11 +1,22 @@
 <!DOCTYPE html>
+<html lang="en">
 <head>
-    <title>Admin View</title>
+    <title>Admin Dashboard</title>
     <link href="/static/css/stylesheet.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
-    <body>
-        <a href="{{ url_for('home') }}" class="home-link"> <i class="fas fa-home"></i> <!-- Font Awesome house icon --></a>
-        <h1>Admin View</h1>
-    </body>
+<body>
+    <a href="{{ url_for('home') }}" class="home-link"> <i class="fas fa-home"></i></a>
+    <h1>Admin Dashboard</h1>
+    <h2>Total Sales: {{ total_sales }}</h2>
+    <h3>Reservations</h3>
+    <ul>
+        {% for reservation in reservations %}
+        <li>{{ reservation[1] }} - Row: {{ reservation[2] }}, Seat: {{ reservation[3] }}</li>
+        {% else %}
+        <li>No reservations found.</li>
+        {% endfor %}
+    </ul>
+    <a href="{{ url_for('home') }}">Return to Home</a>
+</body>
 </html>
