@@ -48,10 +48,20 @@ def login():
 @app.route('/admin')
 def admin():
     db = get_db()
-    cur = db.execute("SELECT * FROM reservations")
-    reservations = cur.fetchall()
-    total_sales = sum(get_cost_matrix()[row][col] for _, _, row, col, _, _ in reservations)
-    return render_template('admin.html', reservations=reservations, total_sales=total_sales)
+    cur = db.execute("SELECT seatRow, seatColumn FROM reservations")
+    reserved_seats = cur.fetchall()
+    seat_matrix = [['O' for _ in range(4)] for _ in range(12)]  #Create a 12x4 matrix of 'O'
+
+    #Update the matrix with 'X' where seats are reserved
+    for row, col in reserved_seats:
+        seat_matrix[row][col] = 'X'
+    
+    total_sales = sum(get_cost_matrix()[row][col] if seat == 'X' else 0 
+                      for row, line in enumerate(seat_matrix) 
+                      for col, seat in enumerate(line))
+
+    return render_template('admin.html', seat_matrix=seat_matrix, total_sales=total_sales)
+
 
 if __name__ == '__main__':
     app.run(debug=True)
