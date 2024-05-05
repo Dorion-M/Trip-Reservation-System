@@ -43,13 +43,14 @@
    <br>
          <!-- Display the cost matrix -->
     <h2>Seating Chart</h2>
-    <table border="1">
+    <table>
+        {% for row in seat_matrix %}
         <tr>
-            <th>Seat 1</th>
-            <th>Seat 2</th>
-            <th>Seat 3</th>
-            <th>Seat 4</th>
+            {% for seat in row %}
+            <td class="{{ seat }}">{{ seat }}</td>
+            {% endfor %}
         </tr>
+        {% endfor %}
     </table>
     </form>
 

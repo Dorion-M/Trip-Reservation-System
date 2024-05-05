@@ -30,7 +30,12 @@ def home():
 
 @app.route('/reservation')
 def reservation():
-    return render_template('reservation.html')
+    seat_matrix = [['O' for _ in range(4)] for _ in range(12)]  #Create a 12x4 matrix of 'O'
+
+    for row, col in get_seats():
+        seat_matrix[row][col] = 'X'
+
+    return render_template('reservation.html', seat_matrix=seat_matrix)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -50,13 +55,10 @@ def login():
 
 @app.route('/admin')
 def admin():
-    db = get_db()
-    cur = db.execute("SELECT seatRow, seatColumn FROM reservations")
-    reserved_seats = cur.fetchall()
     seat_matrix = [['O' for _ in range(4)] for _ in range(12)]  #Create a 12x4 matrix of 'O'
 
     #Update the matrix with 'X' where seats are reserved
-    for row, col in reserved_seats:
+    for row, col in get_seats():
         seat_matrix[row][col] = 'X'
     
     total_sales = sum(get_cost_matrix()[row][col] if seat == 'X' else 0 
@@ -65,32 +67,42 @@ def admin():
 
     return render_template('admin.html', seat_matrix=seat_matrix, total_sales=total_sales)
 
+def get_seats():
+    db = get_db()
+    cur = db.execute("SELECT seatRow, seatColumn FROM reservations")
+    return cur.fetchall()
+
 @app.route('/confirm-booking', methods=['POST'])
 def confirm_booking():
     for value in request.form.values():
         if not value:
             flash("Please fill out all fields.")
-            return render_template('reservation.html')
-        
-    if not check_seat_reservation(request.form.get('row_select'), request.form.get('seat_select')):
-        flash("Seat is already booked. Please choose a valid seat.")
-        return render_template('reservation.html')
+            return reservation()
     
+    row = int(request.form.get('row_select')) - 1
+    column = int(request.form.get('seat_select')) - 1
+
+    if not check_seat_reservation(row, column):
+        flash("Seat is already booked. Please choose a valid seat.")
+        return reservation()
+    
+    print(request.form.get('row_select'))
+
     db = get_db()
 
     query = '''INSERT INTO reservations (passengerName, seatRow, seatColumn, eTicketNumber, created) 
                VALUES (?, ?, ?, ?, (SELECT strftime(\'%Y-%m-%d %H:%M:%S\', datetime(\'now\'))))'''
     userInfo = (
         request.form.get('first_name'),
-        request.form.get('row_select'),
-        request.form.get('seat_select'),
+        row,
+        column,
         ''.join(chain(*zip_longest(request.form.get('first_name'), 'INFOTC4320', fillvalue='')))
     )
 
     db.execute(query, userInfo)
     db.commit()
 
-    return render_template('reservation.html')
+    return reservation()
 
 
 def check_seat_reservation(row, col):
@@ -103,7 +115,6 @@ def check_seat_reservation(row, col):
 
     if result:
         return False
-    
     return True
 
 if __name__ == '__main__':
