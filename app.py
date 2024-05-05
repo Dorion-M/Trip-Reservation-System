@@ -102,6 +102,10 @@ def confirm_booking():
     db.execute(query, userInfo)
     db.commit()
 
+    e_ticket_number = ''.join(chain(*zip_longest(request.form.get('first_name'), 'INFOTC4320', fillvalue='')))  # Generate e-ticket number
+
+    flash(f"Your booking is confirmed.\n E-ticket number: {e_ticket_number}", "success")
+
     return reservation()
 
 
