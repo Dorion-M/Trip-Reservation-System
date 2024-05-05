@@ -1,7 +1,10 @@
-from flask import Flask, render_template, request, redirect, url_for, g
+from flask import Flask, render_template, request, redirect, url_for, g, flash
 import sqlite3
+from itertools import chain, zip_longest
 
 app = Flask(__name__)
+
+app.config['SECRET_KEY'] = 'secret'
 
 DATABASE = 'reservations.db'
 
@@ -62,6 +65,46 @@ def admin():
 
     return render_template('admin.html', seat_matrix=seat_matrix, total_sales=total_sales)
 
+@app.route('/confirm-booking', methods=['POST'])
+def confirm_booking():
+    for value in request.form.values():
+        if not value:
+            flash("Please fill out all fields.")
+            return render_template('reservation.html')
+        
+    if not check_seat_reservation(request.form.get('row_select'), request.form.get('seat_select')):
+        flash("Seat is already booked. Please choose a valid seat.")
+        return render_template('reservation.html')
+    
+    db = get_db()
+
+    query = '''INSERT INTO reservations (passengerName, seatRow, seatColumn, eTicketNumber, created) 
+               VALUES (?, ?, ?, ?, (SELECT strftime(\'%Y-%m-%d %H:%M:%S\', datetime(\'now\'))))'''
+    userInfo = (
+        request.form.get('first_name'),
+        request.form.get('row_select'),
+        request.form.get('seat_select'),
+        ''.join(chain(*zip_longest(request.form.get('first_name'), 'INFOTC4320', fillvalue='')))
+    )
+
+    db.execute(query, userInfo)
+    db.commit()
+
+    return render_template('reservation.html')
+
+
+def check_seat_reservation(row, col):
+    db = get_db()
+
+    query = 'SELECT * FROM reservations WHERE seatRow = ? AND seatColumn = ?'
+    cur = db.execute(query, (row, col))
+
+    result = cur.fetchone()
+
+    if result:
+        return False
+    
+    return True
 
 if __name__ == '__main__':
     app.run(debug=True, host="0.0.0.0")
